@@ -1,1 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[ CRYPTÉ ]</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Lora:ital@1&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;font-family:'Share Tech Mono',monospace;min-height:100vh;overflow:hidden;cursor:crosshair;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px);pointer-events:none;z-index:9999;}
+canvas#rain{position:fixed;inset:0;z-index:0;}
 
+/* PAGE CRYPT */
+#page-crypt{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s;}
+#page-crypt.hide{opacity:0;pointer-events:none;}
+.topbar{position:fixed;top:0;left:0;right:0;padding:8px 16px;display:flex;justify-content:space-between;font-size:10px;color:#cc0033;letter-spacing:2px;border-bottom:1px solid #cc003344;background:rgba(0,0,0,0.92);z-index:100;}
+#dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff2255;margin-right:6px;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.panel{border:1px solid #ff2255;box-shadow:0 0 18px #ff225555;padding:clamp(22px,5vw,46px) clamp(18px,6vw,52px);text-align:center;max-width:520px;width:92%;background:rgba(0,0,0,0.95);position:relative;}
+.co{position:absolute;width:12px;height:12px;border-color:#ff2255;border-style:solid;}
+.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+#main-title{font-family:'VT323',monospace;font-size:clamp(34px,10vw,56px);letter-spacing:6px;color:#ff2255;text-shadow:0 0 10px #ff2255;animation:flicker 6s infinite;margin-bottom:4px;}
+@keyframes flicker{0%,89%,100%{opacity:1}91%{opacity:.2}93%{opacity:1}96%{opacity:.05}98%{opacity:1}}
+#main-sub{font-size:clamp(9px,2.5vw,11px);letter-spacing:3px;color:#ff225555;margin-bottom:22px;}
+#glitch-text{font-size:clamp(9px,2.5vw,11px);color:#ff225544;line-height:1.9;margin-bottom:20px;word-break:break-all;min-height:50px;}
+#prog-wrap{background:#080000;border:1px solid #ff225533;height:4px;margin-bottom:22px;}
+#prog-bar{height:100%;width:0%;background:linear-gradient(90deg,#550011,#ff2255,#ff88aa);box-shadow:0 0 8px #ff2255;transition:width .08s;}
+#btn-decrypt{font-family:'Share Tech Mono',monospace;font-size:clamp(12px,3.5vw,15px);letter-spacing:4px;padding:12px 30px;background:transparent;border:1px solid #ff2255;color:#ff2255;cursor:pointer;outline:none;position:relative;overflow:hidden;box-shadow:0 0 10px #ff225544;transition:transform .15s,background .2s;}
+#btn-decrypt::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,34,85,0.18),transparent);animation:sw 2.5s linear infinite;}
+@keyframes sw{0%{left:-100%}100%{left:100%}}
+#btn-decrypt:hover{background:rgba(255,34,85,.07);transform:scale(1.03);}
+#btn-decrypt.done{pointer-events:none;opacity:.5;}
+#log-box{margin-top:14px;font-size:9px;color:#ff225544;text-align:left;height:44px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;}
+.ll{animation:li .2s ease;}
+@keyframes li{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
+.bottombar{position:fixed;bottom:0;left:0;right:0;padding:5px 16px;font-size:9px;color:#ff225533;border-top:1px solid #ff225518;background:rgba(0,0,0,0.85);z-index:100;display:flex;justify-content:space-between;letter-spacing:1px;}
+
+/* PAGE LOVE */
+#page-love{position:fixed;inset:0;z-index:20;background:#000;opacity:0;pointer-events:none;transition:opacity 1s;}
+#page-love.show{opacity:1;pointer-events:all;}
+canvas#love-canvas{position:absolute;top:0;left:0;}
+
+#btn-back{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:3px;padding:9px 26px;background:rgba(0,0,0,0.7);border:1px solid #ff225544;color:#ff225544;cursor:pointer;outline:none;transition:all .2s;z-index:50;opacity:0;pointer-events:none;white-space:nowrap;}
+#btn-back.show{opacity:1;pointer-events:all;}
+#btn-back:hover{color:#ff2255;border-color:#ff2255;}
+
+/* ── PETIT CŒUR SECRET en bas à droite ── */
+#secret-btn{
+  position:fixed;bottom:18px;right:18px;
+  width:32px;height:32px;
+  background:transparent;border:none;cursor:pointer;
+  z-index:200;opacity:0;pointer-events:none;
+  transition:opacity .8s;
+  font-size:16px;line-height:32px;text-align:center;
+  color:#ff222233;
+}
+#secret-btn.show{opacity:1;pointer-events:all;animation:hbeat 2.4s ease-in-out infinite;}
+@keyframes hbeat{0%,100%{transform:scale(1);color:#ff222244}45%{transform:scale(1.25);color:#ff2255aa}50%{transform:scale(1.1)}}
+#secret-btn:hover{color:#ff2255!important;}
+
+/* ── MODAL ── */
+#secret-modal{
+  position:fixed;inset:0;z-index:400;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+  background:rgba(0,0,0,0);
+  pointer-events:none;
+  transition:background .4s;
+}
+#secret-modal.show{background:rgba(0,0,0,0.9);pointer-events:all;}
+
+#secret-card{
+  position:relative;
+  max-width:340px;width:100%;
+  background:#050000;
+  border:1px solid #ff225555;
+  box-shadow:0 0 40px #ff225522,0 0 1px #ff225588;
+  padding:34px 26px 26px;
+  text-align:center;
+  opacity:0;transform:scale(.9) translateY(16px);
+  transition:opacity .45s .1s, transform .45s .1s;
+}
+#secret-modal.show #secret-card{opacity:1;transform:none;}
+
+.sc{position:absolute;width:10px;height:10px;border-color:#ff225566;border-style:solid;}
+.sc.tl{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.sc.tr{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.sc.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px}
+.sc.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+
+#msg-heart{
+  font-size:40px;line-height:1;
+  display:block;margin-bottom:20px;
+  animation:none;
+}
+#secret-modal.show #msg-heart{animation:hpop .55s cubic-bezier(.22,1,.36,1) .25s both;}
+@keyframes hpop{from{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(3deg)}to{transform:scale(1) rotate(0);opacity:1}}
+
+/* ligne déco */
+.msg-line{
+  width:40px;height:1px;
+  background:linear-gradient(90deg,transparent,#ff225566,transparent);
+  margin:0 auto 18px;
+}
+
+#secret-text{
+  font-family:'Lora',Georgia,serif;
+  font-size:clamp(13px,3.8vw,15px);
+  color:#ffddee;
+  line-height:1.9;
+  letter-spacing:.2px;
+  font-style:italic;
+  margin-bottom:18px;
+}
+#secret-text em{
+  font-style:normal;
+  color:#ff8baa;
+}
+
+#secret-sig{
+  font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:#ff225548;
+  letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:22px;
+}
+
+#secret-close{
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px;letter-spacing:3px;
+  padding:8px 22px;background:transparent;
+  border:1px solid #ff225544;color:#ff225544;
+  cursor:pointer;outline:none;transition:all .2s;
+}
+#secret-close:hover{color:#ff2255;border-color:#ff2255;box-shadow:0 0 8px #ff225533;}
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas>
+
+<div id="page-crypt">
+  <div class="topbar"><span><span id="dot"></span>FICHIER CRYPTÉ — ACCÈS REFUSÉ</span><span id="clock">00:00:00</span></div>
+  <div class="panel">
+    <div class="co tl"></div><div class="co tr"></div><div class="co bl"></div><div class="co br"></div>
+    <div id="main-title">[ CRYPTÉ ]</div>
+    <div id="main-sub">DONNÉES CLASSIFIÉES — NIVEAU ROUGE</div>
+    <div id="glitch-text">48 61 63 6B 69 6E 67 20 6D 61 69 6E 66 72 61 6D 65 2E 2E 2E</div>
+    <div id="prog-wrap"><div id="prog-bar"></div></div>
+    <button id="btn-decrypt" onclick="doDecrypt()">▶ DÉCRYPTER</button>
+    <div id="log-box">
+      <div class="ll">&gt; INIT SYSTEM... OK</div>
+      <div class="ll">&gt; CIPHER: AES-HEART-256</div>
+      <div class="ll">&gt; EN ATTENTE...</div>
+    </div>
+  </div>
+  <div class="bottombar"><span>KERNEL v4.2 — LOVE_PROTOCOL</span><span>NODE::HEART — LOCKED</span></div>
+</div>
+
+<div id="page-love">
+  <canvas id="love-canvas"></canvas>
+</div>
+
+<!-- Bouton retour centré -->
+<button id="btn-back" onclick="goBack()">← RETOUR</button>
+
+<!-- Petit cœur caché en bas à droite -->
+<button id="secret-btn" onclick="openSecret()" title="">♥</button>
+
+<!-- Modal message secret -->
+<div id="secret-modal" onclick="closeSecretOutside(event)">
+  <div id="secret-card">
+    <div class="sc tl"></div><div class="sc tr"></div>
+    <div class="sc bl"></div><div class="sc br"></div>
+
+    <span id="msg-heart">♥</span>
+    <div class="msg-line"></div>
+
+    <p id="secret-text">
+      Cette page a été créée spécialement pour toi,<br>
+      <em>la personne la plus importante de mon monde.</em><br><br>
+      Dans un univers entier rempli de milliards d'âmes,<br>
+      c'est toi que mon cœur aurait choisi<br>
+      <em>encore et encore et encore.</em><br><br>
+      Tu es mon endroit préféré,<br>
+      mon silence qui apaise,<br>
+      ma raison de sourire sans raison.<br><br>
+      <em>Je t'aime — pas juste aujourd'hui,<br>
+      mais dans tous les demains qui existent.</em>
+    </p>
+
+    <div class="msg-line"></div>
+    <p id="secret-sig">— pour toi, rien que pour toi —</p>
+
+    <button id="secret-close" onclick="closeSecret()">× FERMER</button>
+  </div>
+</div>
+
+<script>
+const isMobile = window.innerWidth < 600;
+
+/* ── RAIN ── */
+const rc=document.getElementById('rain'), rx=rc.getContext('2d');
+function rsz(){rc.width=innerWidth;rc.height=innerHeight;} rsz();
+const RC='01♥LOVE@!?<>'.split('');
+let dr=[];
+function idr(){dr=Array.from({length:Math.floor(rc.width/18)},()=>Math.random()*-40);} idr();
+setInterval(()=>{
+  rx.fillStyle='rgba(0,0,0,0.1)'; rx.fillRect(0,0,rc.width,rc.height);
+  rx.font='12px monospace';
+  dr.forEach((y,i)=>{
+    rx.fillStyle=`rgba(255,34,85,${.05+Math.random()*.16})`;
+    rx.fillText(RC[Math.floor(Math.random()*RC.length)],i*18,y*18);
+    if(y*18>rc.height&&Math.random()>.97) dr[i]=0; else dr[i]++;
+  });
+}, isMobile?100:65);
+
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':');
+},1000);
+
+const CL=['48 65 61 72 74 4C 6F 63 6B 65 64','01101100 01101111 01110110 01100101','⚠ PROTOCOLE AMOUR ACTIF ⚠','XOR:████████ LOVE_CIPHER'];
+const GCH='!@#$%<>?|[]ΩΣπ∆'.split('');
+const ge=document.getElementById('glitch-text');
+setInterval(()=>{
+  if(document.getElementById('page-crypt').classList.contains('hide')) return;
+  const l=CL[Math.floor(Math.random()*CL.length)];
+  ge.textContent=l.split('').map(c=>Math.random()>.75?GCH[Math.floor(Math.random()*GCH.length)]:c).join('');
+},200);
+
+const DL=['> BYPASS PARE-FEU... OK','> EXTRACTION: LOVE.ENC','> DÉCHIFFREMENT 1/3... ♥','> DÉCHIFFREMENT 2/3... ♥♥','> DÉCHIFFREMENT 3/3... ♥♥♥','> CONTENU: LOVE ♥','> ACCÈS CŒUR AUTORISÉ ♥♥♥'];
+function addLog(t){
+  const b=document.getElementById('log-box');
+  const d=document.createElement('div'); d.className='ll'; d.textContent=t;
+  b.appendChild(d); while(b.children.length>4) b.removeChild(b.firstChild);
+}
+
+let done=false;
+function doDecrypt(){
+  if(done) return; done=true;
+  document.getElementById('btn-decrypt').textContent='▶ DÉCRYPTAGE...';
+  document.getElementById('btn-decrypt').classList.add('done');
+  const bar=document.getElementById('prog-bar'); let p=0;
+  [0,320,650,980,1300,1620,1940].forEach((t,i)=>setTimeout(()=>addLog(DL[i]||''),t));
+  const bi=setInterval(()=>{
+    p=Math.min(100,p+1.8); bar.style.width=p+'%';
+    if(p>=100){clearInterval(bi); setTimeout(openLovePage,350);}
+  },38);
+}
+
+/* ── SECRET ── */
+function openSecret(){
+  document.getElementById('secret-modal').classList.add('show');
+}
+function closeSecret(){
+  document.getElementById('secret-modal').classList.remove('show');
+}
+function closeSecretOutside(e){
+  if(e.target===document.getElementById('secret-modal')) closeSecret();
+}
+
+/* ════════════════════════════════════
+   CANVAS LOVE
+════════════════════════════════════ */
+const lc=document.getElementById('love-canvas');
+const lx=lc.getContext('2d');
+let W,H,DPR=1;
+
+function resizeLove(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  lc.width=W*DPR; lc.height=H*DPR;
+  lc.style.width=W+'px'; lc.style.height=H+'px';
+  lx.setTransform(DPR,0,0,DPR,0,0);
+}
+resizeLove();
+
+/* ── Grille cœur 32×28 ── */
+const GRID=[
+  [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+  [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],
+  [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0],
+  [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0],
+  [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+const GR=GRID.length, GCOLS=GRID[0].length;
+
+function cellColor(gr,gc){
+  const cx=GCOLS/2, cy=GR*0.40;
+  const dist=Math.sqrt((gc-cx)**2+(gr-cy)**2);
+  const maxD=Math.sqrt((GCOLS/2)**2+(GR*0.60)**2);
+  const prox=1-Math.min(dist/maxD,1);
+  return [255,Math.floor(prox*prox*140),Math.floor(prox*75)];
+}
+
+function getHeartCells(){
+  const maxCW=Math.min(W*0.88/GCOLS,H*0.80/GR);
+  const cellW=Math.max(8,Math.min(maxCW,isMobile?18:32));
+  const cellH=cellW*1.18;
+  const fs=Math.max(7,Math.round(cellW*0.7));
+  const totalW=GCOLS*cellW, totalH=GR*cellH;
+  const ox=(W-totalW)/2, oy=(H-totalH)/2-H*0.01;
+  const cells=[];
+  for(let r=0;r<GR;r++) for(let c=0;c<GCOLS;c++){
+    if(!GRID[r][c]) continue;
+    cells.push({x:ox+c*cellW+cellW/2,y:oy+r*cellH+cellH/2,gr:r,gc:c,fs,angle:(Math.random()-0.5)*0.3,col:cellColor(r,c),alpha:0,born:false,spawnT:0});
+  }
+  cells.sort((a,b)=>a.y-b.y);
+  return cells;
+}
+
+function buildOffscreen(cells){
+  const oc=document.createElement('canvas');
+  oc.width=W*DPR; oc.height=H*DPR;
+  const ox=oc.getContext('2d');
+  ox.scale(DPR,DPR);
+  cells.forEach(c=>{
+    ox.save();
+    ox.translate(c.x,c.y); ox.rotate(c.angle);
+    ox.font=`bold ${c.fs}px "Share Tech Mono"`;
+    ox.textAlign='center'; ox.textBaseline='middle';
+    ox.fillStyle=`rgb(${c.col[0]},${c.col[1]},${c.col[2]})`;
+    ox.fillText('LOVE',0,0);
+    ox.restore();
+  });
+  return oc;
+}
+
+const MAX_P=isMobile?55:110;
+let particles=[];
+
+class Particle{
+  constructor(x,y,vx,vy,col,text,sz,life){
+    Object.assign(this,{x,y,vx,vy,col,text,sz,life,maxLife:life});
+  }
+  update(){this.x+=this.vx;this.y+=this.vy;this.vy+=0.075;this.vx*=0.96;this.vy*=0.96;this.life-=0.02;}
+  draw(ctx){
+    const a=Math.max(0,this.life/this.maxLife);
+    ctx.globalAlpha=a;
+    ctx.fillStyle=`rgb(${this.col})`;
+    if(this.text){ctx.font=`bold ${this.sz}px "Share Tech Mono"`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(this.text,this.x,this.y);}
+    else{ctx.beginPath();ctx.arc(this.x,this.y,this.sz,0,Math.PI*2);ctx.fill();}
+    ctx.globalAlpha=1;
+  }
+  get dead(){return this.life<=0;}
+}
+
+class Rocket{
+  constructor(){
+    this.x=W*.1+Math.random()*W*.8;
+    this.tx=W*.08+Math.random()*W*.84;
+    this.ty=H*.05+Math.random()*H*.35;
+    this.y=H+6;
+    const dx=this.tx-this.x,dy=this.ty-this.y,spd=isMobile?10:13,d=Math.sqrt(dx*dx+dy*dy);
+    this.vx=dx/d*spd;this.vy=dy/d*spd;
+    this.trail=[];this.done=false;
+  }
+  update(){
+    this.trail.push({x:this.x,y:this.y});
+    if(this.trail.length>7)this.trail.shift();
+    this.x+=this.vx;this.y+=this.vy;this.vy+=0.2;
+    if(this.y<=this.ty||this.vy>=0)this.done=true;
+  }
+  draw(ctx){
+    this.trail.forEach((t,i)=>{ctx.globalAlpha=(i/this.trail.length)*0.5;ctx.fillStyle='#ff2244';ctx.beginPath();ctx.arc(t.x,t.y,1.5,0,Math.PI*2);ctx.fill();});
+    ctx.globalAlpha=1;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(this.x,this.y,2.5,0,Math.PI*2);ctx.fill();
+  }
+  explode(){
+    const COLS=['255,50,80','255,120,150','255,200,215','255,255,255','255,80,110','200,20,50','255,160,180'];
+    const col=COLS[Math.floor(Math.random()*COLS.length)];
+    const words=['LOVE','LOVE','♥','LOVE','♥','LOVE'];
+    const n=isMobile?14:24;
+    for(let i=0;i<n&&particles.length<MAX_P;i++){
+      const angle=Math.random()*Math.PI*2,spd=1.5+Math.random()*4.5,isText=Math.random()<0.52;
+      particles.push(new Particle(this.x,this.y,Math.cos(angle)*spd,Math.sin(angle)*spd,col,isText?words[Math.floor(Math.random()*words.length)]:null,isText?(isMobile?9:12):(1+Math.random()*2),0.8+Math.random()*0.55));
+    }
+  }
+}
+
+let heartCells=[],offImg=null,rockets=[];
+let animRaf=null,phase='idle',fwTimer=0,lastTs=0;
+const FW_INTERVAL=isMobile?3000:2200;
+
+function animLoop(ts){
+  animRaf=requestAnimationFrame(animLoop);
+  const dt=ts-lastTs;
+  if(dt<15)return;
+  lastTs=ts;
+  lx.clearRect(0,0,W,H);
+
+  if(phase==='spawning'){
+    let allReady=true;
+    heartCells.forEach(c=>{
+      if(!c.born&&ts>=c.spawnT)c.born=true;
+      if(c.born)c.alpha=Math.min(1,c.alpha+0.09);
+      else allReady=false;
+      if(c.alpha<0.01)return;
+      lx.save();lx.globalAlpha=c.alpha;
+      lx.translate(c.x,c.y);lx.rotate(c.angle);
+      lx.font=`bold ${c.fs}px "Share Tech Mono"`;
+      lx.textAlign='center';lx.textBaseline='middle';
+      lx.fillStyle=`rgb(${c.col[0]},${c.col[1]},${c.col[2]})`;
+      lx.fillText('LOVE',0,0);
+      lx.restore();
+    });
+    if(allReady&&heartCells.every(c=>c.alpha>=0.97)){offImg=buildOffscreen(heartCells);phase='live';}
+    return;
+  }
+
+  if(phase==='live'&&offImg){
+    const pulse=0.72+Math.sin(ts/950)*0.28;
+    lx.globalAlpha=pulse;
+    lx.drawImage(offImg,0,0,W,H);
+    lx.globalAlpha=1;
+  }
+
+  fwTimer+=dt;
+  if(fwTimer>=FW_INTERVAL){
+    fwTimer=0;
+    const nb=isMobile?1:1+Math.floor(Math.random()*2);
+    for(let i=0;i<nb;i++)setTimeout(()=>rockets.push(new Rocket()),i*260);
+  }
+  rockets=rockets.filter(r=>{r.update();r.draw(lx);if(r.done){r.explode();return false;}return true;});
+  particles=particles.filter(p=>{p.update();p.draw(lx);return!p.dead;});
+}
+
+function startLove(){
+  heartCells=getHeartCells();
+  const minY=Math.min(...heartCells.map(c=>c.y));
+  const maxY=Math.max(...heartCells.map(c=>c.y));
+  const now=performance.now();
+  heartCells.forEach(c=>{
+    const prog=(c.y-minY)/(maxY-minY||1);
+    c.spawnT=now+prog*2400+Math.random()*160;
+  });
+  phase='spawning';fwTimer=FW_INTERVAL*0.8;
+  particles=[];rockets=[];offImg=null;lastTs=0;
+  if(animRaf)cancelAnimationFrame(animRaf);
+  animRaf=requestAnimationFrame(animLoop);
+}
+
+function openLovePage(){
+  document.getElementById('page-crypt').classList.add('hide');
+  document.getElementById('page-love').classList.add('show');
+  resizeLove();
+  setTimeout(startLove,500);
+  setTimeout(()=>{
+    document.getElementById('btn-back').classList.add('show');
+    document.getElementById('secret-btn').classList.add('show');
+  },7000);
+}
+
+function goBack(){
+  if(animRaf){cancelAnimationFrame(animRaf);animRaf=null;}
+  lx.clearRect(0,0,W,H);
+  phase='idle';heartCells=[];particles=[];rockets=[];offImg=null;
+  document.getElementById('page-love').classList.remove('show');
+  document.getElementById('page-crypt').classList.remove('hide');
+  document.getElementById('btn-back').classList.remove('show');
+  document.getElementById('secret-btn').classList.remove('show');
+  closeSecret();
+  const btn=document.getElementById('btn-decrypt');
+  btn.textContent='▶ DÉCRYPTER';btn.classList.remove('done');
+  document.getElementById('prog-bar').style.width='0%';
+  document.getElementById('log-box').innerHTML='<div class="ll">&gt; INIT SYSTEM... OK</div><div class="ll">&gt; CIPHER: AES-HEART-256</div><div class="ll">&gt; EN ATTENTE...</div>';
+  done=false;
+}
+</script>
+</body>
+</html>
